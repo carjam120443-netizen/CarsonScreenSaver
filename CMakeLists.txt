@@ -13,6 +13,10 @@ target_compile_definitions(CarsonScreenSaver PRIVATE
     _UNICODE
 )
 
+target_link_libraries(CarsonScreenSaver PRIVATE
+    Msimg32
+)
+
 if(MSVC)
     target_compile_options(CarsonScreenSaver PRIVATE /W4)
 endif()
