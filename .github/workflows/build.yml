@@ -19,8 +19,20 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
 
-      - name: Upload screensaver
+      - name: Package separate screensavers
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path package | Out-Null
+          Copy-Item build/Release/CarsonScreenSaver.scr package/CarsonScreenSaver.scr
+          Copy-Item build/Release/CarsonTuxScreenSaver.scr package/CarsonTuxScreenSaver.scr
+
+      - name: Create ZIP with separate screensavers
+        shell: pwsh
+        run: |
+          Compress-Archive -Path package/CarsonScreenSaver.scr,package/CarsonTuxScreenSaver.scr -DestinationPath CarsonScreenSavers.zip -Force
+
+      - name: Upload screensavers
         uses: actions/upload-artifact@v4
         with:
-          name: CarsonScreenSaver
-          path: build/Release/CarsonScreenSaver.scr
+          name: CarsonScreenSavers
+          path: CarsonScreenSavers.zip
