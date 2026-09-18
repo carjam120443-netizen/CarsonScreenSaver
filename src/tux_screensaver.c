@@ -5,6 +5,8 @@
 #include <math.h>
 
 static BOOL running=TRUE, preview=FALSE;
+static POINT start_cursor={0,0};
+static DWORD start_time=0;
 static float x=.5f,y=.5f,vx=.0018f,vy=.0014f,t=0;
 
 static void e(HDC d,int l,int q,int r,int b,COLORREF c){HBRUSH z=CreateSolidBrush(c),o=SelectObject(d,z);Ellipse(d,l,q,r,b);SelectObject(d,o);DeleteObject(z);}
@@ -59,7 +61,8 @@ static void draw_scene(HDC d,RECT*r){
 
 static LRESULT CALLBACK W(HWND h,UINT m,WPARAM a,LPARAM b){
     switch(m){
-        case WM_CREATE:SetTimer(h,1,16,0);return 0;
+        case WM_CREATE:
+            GetCursorPos(&start_cursor);start_time=GetTickCount();SetTimer(h,1,16,0);return 0;
         case WM_TIMER:
             t+=.016f;x+=vx;y+=vy;
             if(x<.16f||x>.84f)vx=-vx;
@@ -75,7 +78,13 @@ static LRESULT CALLBACK W(HWND h,UINT m,WPARAM a,LPARAM b){
             SelectObject(mem,oldbm);DeleteObject(bm);DeleteDC(mem);
             EndPaint(h,&ps);return 0;
         }
-        case WM_MOUSEMOVE:case WM_LBUTTONDOWN:case WM_RBUTTONDOWN:case WM_MBUTTONDOWN:
+        case WM_MOUSEMOVE:
+            if(!preview && GetTickCount()-start_time>1200){
+                POINT pt;GetCursorPos(&pt);
+                if(pt.x!=start_cursor.x || pt.y!=start_cursor.y){DestroyWindow(h);return 0;}
+            }
+            break;
+        case WM_LBUTTONDOWN:case WM_RBUTTONDOWN:case WM_MBUTTONDOWN:
         case WM_KEYDOWN:case WM_SYSKEYDOWN:
             if(!preview){DestroyWindow(h);return 0;}break;
         case WM_DESTROY:KillTimer(h,1);running=FALSE;PostQuitMessage(0);return 0;
