@@ -5,6 +5,8 @@
 #include <math.h>
 
 static BOOL running=TRUE, preview=FALSE;
+static HWND windows[16];
+static int window_count=0;
 static POINT start_cursor={0,0};
 static DWORD start_time=0;
 static float x=.5f,y=.5f,vx=.0018f,vy=.0014f,t=0;
@@ -81,27 +83,42 @@ static LRESULT CALLBACK W(HWND h,UINT m,WPARAM a,LPARAM b){
         case WM_MOUSEMOVE:
             if(!preview && GetTickCount()-start_time>1200){
                 POINT pt;GetCursorPos(&pt);
-                if(pt.x!=start_cursor.x || pt.y!=start_cursor.y){DestroyWindow(h);return 0;}
+                if(pt.x!=start_cursor.x || pt.y!=start_cursor.y){running=FALSE;for(int i=0;i<window_count;i++)if(windows[i]&&windows[i]!=h)DestroyWindow(windows[i]);DestroyWindow(h);PostQuitMessage(0);return 0;}
             }
             break;
         case WM_LBUTTONDOWN:case WM_RBUTTONDOWN:case WM_MBUTTONDOWN:
         case WM_KEYDOWN:case WM_SYSKEYDOWN:
-            if(!preview){DestroyWindow(h);return 0;}break;
+            if(!preview){running=FALSE;for(int i=0;i<window_count;i++)if(windows[i]&&windows[i]!=h)DestroyWindow(windows[i]);DestroyWindow(h);PostQuitMessage(0);return 0;}break;
         case WM_DESTROY:KillTimer(h,1);running=FALSE;PostQuitMessage(0);return 0;
     }
     return DefWindowProcW(h,m,a,b);
 }
 
+static BOOL CALLBACK create_tux_monitor(HMONITOR monitor,HDC dc,LPRECT unused,LPARAM data){
+    (void)dc;(void)unused;(void)data;
+    if(window_count>=16)return FALSE;
+    MONITORINFO mi={sizeof(mi)};GetMonitorInfoW(monitor,&mi);
+    RECT r=mi.rcMonitor;HINSTANCE i=GetModuleHandleW(0);
+    HWND h=CreateWindowExW(WS_EX_TOPMOST,L"CarsonTuxScreenSaverWindow",L"Carson Tux ScreenSaver",WS_POPUP,
+      r.left,r.top,r.right-r.left,r.bottom-r.top,NULL,0,i,0);
+    if(h){windows[window_count++]=h;ShowWindow(h,SW_SHOW);UpdateWindow(h);}
+    return TRUE;
+}
 static int run(HWND parent){
     HINSTANCE i=GetModuleHandleW(0);
     WNDCLASSW c={0};c.hInstance=i;c.lpfnWndProc=W;c.lpszClassName=L"CarsonTuxScreenSaverWindow";
     c.hCursor=LoadCursorW(0,IDC_ARROW);c.hbrBackground=(HBRUSH)GetStockObject(BLACK_BRUSH);RegisterClassW(&c);
-    preview=parent!=0;RECT r;
-    if(parent)GetClientRect(parent,&r);
-    else{r.left=GetSystemMetrics(SM_XVIRTUALSCREEN);r.top=GetSystemMetrics(SM_YVIRTUALSCREEN);r.right=r.left+GetSystemMetrics(SM_CXVIRTUALSCREEN);r.bottom=r.top+GetSystemMetrics(SM_CYVIRTUALSCREEN);}
-    HWND h=CreateWindowExW(WS_EX_TOPMOST,c.lpszClassName,L"Carson Tux ScreenSaver",parent?WS_CHILD:WS_POPUP,r.left,r.top,r.right-r.left,r.bottom-r.top,parent,0,i,0);
-    if(!h)return 1;
-    if(!parent)ShowCursor(FALSE);ShowWindow(h,SW_SHOW);UpdateWindow(h);
+    preview=parent!=0;running=TRUE;window_count=0;
+    if(parent){
+        RECT r;GetClientRect(parent,&r);
+        windows[0]=CreateWindowExW(WS_EX_TOPMOST,c.lpszClassName,L"Carson Tux ScreenSaver",WS_CHILD,0,0,r.right,r.bottom,parent,0,i,0);
+        if(!windows[0])return 1;
+        window_count=1;ShowWindow(windows[0],SW_SHOW);UpdateWindow(windows[0]);
+    }else{
+        ShowCursor(FALSE);
+        EnumDisplayMonitors(NULL,NULL,create_tux_monitor,0);
+        if(window_count==0){ShowCursor(TRUE);return 1;}
+    }
     MSG m;while(running&&GetMessageW(&m,0,0,0)>0){TranslateMessage(&m);DispatchMessageW(&m);}
     if(!parent)ShowCursor(TRUE);return 0;
 }

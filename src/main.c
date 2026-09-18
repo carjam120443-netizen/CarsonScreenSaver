@@ -10,7 +10,8 @@
 #define CONFIG_SPEED L"Speed"
 #define CONFIG_BRIGHTNESS L"Brightness"
 
-static HWND g_hwnd;
+static HWND g_windows[16];
+static int g_window_count=0;
 static BOOL g_running = TRUE;
 static BOOL g_preview = FALSE;
 static BOOL g_config_mode = FALSE;
@@ -96,22 +97,37 @@ static LRESULT CALLBACK WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam) 
   HFONT old=(HFONT)SelectObject(hdc,font);RECT title=rc;title.top=h/2-35;title.bottom=h/2+15;DrawTextW(hdc,L"CarsonScreenSaver",-1,&title,DT_CENTER|DT_VCENTER|DT_SINGLELINE);SelectObject(hdc,old);DeleteObject(font);EndPaint(hwnd,&ps);return 0;
  }
  case WM_MOUSEMOVE:
-  if(!g_preview&&!g_config_mode&&GetTickCount()-g_start_time>1200){POINT pt;GetCursorPos(&pt);if(pt.x!=g_start_cursor.x||pt.y!=g_start_cursor.y){DestroyWindow(hwnd);return 0;}}
+  if(!g_preview&&!g_config_mode&&GetTickCount()-g_start_time>1200){POINT pt;GetCursorPos(&pt);if(pt.x!=g_start_cursor.x||pt.y!=g_start_cursor.y){g_running=FALSE;for(int i=0;i<g_window_count;i++)if(g_windows[i]&&g_windows[i]!=hwnd)DestroyWindow(g_windows[i]);DestroyWindow(hwnd);PostQuitMessage(0);return 0;}}
   break;
  case WM_LBUTTONDOWN: case WM_RBUTTONDOWN: case WM_MBUTTONDOWN: case WM_KEYDOWN: case WM_SYSKEYDOWN:
-  if(!g_preview&&!g_config_mode){DestroyWindow(hwnd);return 0;} break;
+  if(!g_preview&&!g_config_mode){g_running=FALSE;for(int i=0;i<g_window_count;i++)if(g_windows[i]&&g_windows[i]!=hwnd)DestroyWindow(g_windows[i]);DestroyWindow(hwnd);PostQuitMessage(0);return 0;} break;
  case WM_DESTROY: KillTimer(hwnd,1);g_running=FALSE;PostQuitMessage(0);return 0;
  }
  return DefWindowProcW(hwnd,msg,wParam,lParam);
 }
+static BOOL CALLBACK create_monitor_window(HMONITOR monitor,HDC dc,LPRECT unused,LPARAM data) {
+ (void)dc;(void)unused;(void)data;
+ if(g_window_count>=16)return FALSE;
+ MONITORINFO mi={sizeof(mi)};GetMonitorInfoW(monitor,&mi);
+ RECT r=mi.rcMonitor;HINSTANCE instance=GetModuleHandleW(NULL);
+ HWND h=CreateWindowExW(WS_EX_TOPMOST,L"CarsonScreenSaverWindow",L"CarsonScreenSaver",WS_POPUP,
+   r.left,r.top,r.right-r.left,r.bottom-r.top,NULL,NULL,instance,NULL);
+ if(h){g_windows[g_window_count++]=h;ShowWindow(h,SW_SHOW);UpdateWindow(h);}
+ return TRUE;
+}
 static int run_screensaver(HWND parent) {
  HINSTANCE instance=GetModuleHandleW(NULL); WNDCLASSW wc={0};wc.hInstance=instance;wc.lpfnWndProc=WndProc;wc.lpszClassName=L"CarsonScreenSaverWindow";wc.hCursor=LoadCursorW(NULL,IDC_ARROW);wc.hbrBackground=(HBRUSH)GetStockObject(BLACK_BRUSH);RegisterClassW(&wc);
- g_preview=parent!=NULL; DWORD style=parent?WS_CHILD:WS_POPUP;RECT rc;
- if(parent)GetClientRect(parent,&rc);else{rc.left=GetSystemMetrics(SM_XVIRTUALSCREEN);rc.top=GetSystemMetrics(SM_YVIRTUALSCREEN);rc.right=rc.left+GetSystemMetrics(SM_CXVIRTUALSCREEN);rc.bottom=rc.top+GetSystemMetrics(SM_CYVIRTUALSCREEN);}
- g_hwnd=CreateWindowExW(WS_EX_TOPMOST,wc.lpszClassName,L"CarsonScreenSaver",style,rc.left,rc.top,rc.right-rc.left,rc.bottom-rc.top,parent,NULL,instance,NULL);
- if(!g_hwnd)return 1;
- if(!parent){ShowCursor(FALSE);SetWindowLongPtrW(g_hwnd,GWLP_USERDATA,1);}
- ShowWindow(g_hwnd,SW_SHOW);UpdateWindow(g_hwnd);
+ g_preview=parent!=NULL;g_running=TRUE;g_window_count=0;
+ if(parent){
+  RECT rc;GetClientRect(parent,&rc);
+  g_windows[0]=CreateWindowExW(WS_EX_TOPMOST,wc.lpszClassName,L"CarsonScreenSaver",WS_CHILD,0,0,rc.right,rc.bottom,parent,NULL,instance,NULL);
+  if(!g_windows[0])return 1;
+  g_window_count=1;ShowWindow(g_windows[0],SW_SHOW);UpdateWindow(g_windows[0]);
+ }else{
+  ShowCursor(FALSE);
+  EnumDisplayMonitors(NULL,NULL,create_monitor_window,0);
+  if(g_window_count==0){ShowCursor(TRUE);return 1;}
+ }
  MSG msg;while(g_running&&GetMessageW(&msg,NULL,0,0)>0){TranslateMessage(&msg);DispatchMessageW(&msg);}
  if(!parent)ShowCursor(TRUE);return 0;
 }
