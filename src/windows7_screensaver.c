@@ -94,14 +94,14 @@ static void draw_scene(HDC dc, RECT *r) {
     SelectObject(dc, old);
     DeleteObject(logo_font);
 
-    HFONT small = CreateFontW(-(h > 700 ? 28 : 21), 0, 0, 0, FW_LIGHT, FALSE, FALSE, FALSE,
+    HFONT footer_font = CreateFontW(-(h > 700 ? 28 : 21), 0, 0, 0, FW_LIGHT, FALSE, FALSE, FALSE,
         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
         DEFAULT_PITCH, L"Segoe UI Light");
-    old = (HFONT)SelectObject(dc, small);
+    old = SelectObject(dc, footer_font);
     RECT footer = {0, h - 65, w, h - 20};
     DrawTextW(dc, L"CarsonScreenSaver", -1, &footer, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     SelectObject(dc, old);
-    DeleteObject(small);
+    DeleteObject(footer_font);
 }
 
 static void close_all(HWND except) {
