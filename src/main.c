@@ -14,6 +14,8 @@ static HWND g_hwnd;
 static BOOL g_running = TRUE;
 static BOOL g_preview = FALSE;
 static BOOL g_config_mode = FALSE;
+static POINT g_start_cursor={0,0};
+static DWORD g_start_time=0;
 static float g_time = 0.0f;
 static int g_bubble_count_setting = 5;
 static int g_speed_setting = 100;
@@ -79,7 +81,7 @@ static void draw_bubble(HDC hdc,int cx,int cy,int radius,BYTE alpha) {
 }
 static LRESULT CALLBACK WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam) {
  switch(msg) {
- case WM_CREATE: SetTimer(hwnd,1,16,NULL); return 0;
+ case WM_CREATE: GetCursorPos(&g_start_cursor); g_start_time=GetTickCount(); SetTimer(hwnd,1,16,NULL); return 0;
  case WM_TIMER:
   g_time+=0.016f*(float)g_speed_setting/100.0f;
   for(int i=0;i<g_bubble_max;i++){Bubble *b=&g_bubbles[i]; b->x+=b->vx*(float)g_speed_setting/100.0f; b->y+=b->vy*(float)g_speed_setting/100.0f;
@@ -93,7 +95,10 @@ static LRESULT CALLBACK WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam) 
   HFONT font=CreateFontW(-(h>700?42:30),0,0,0,FW_LIGHT,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,L"Segoe UI Light");
   HFONT old=(HFONT)SelectObject(hdc,font);RECT title=rc;title.top=h/2-35;title.bottom=h/2+15;DrawTextW(hdc,L"CarsonScreenSaver",-1,&title,DT_CENTER|DT_VCENTER|DT_SINGLELINE);SelectObject(hdc,old);DeleteObject(font);EndPaint(hwnd,&ps);return 0;
  }
- case WM_MOUSEMOVE: case WM_LBUTTONDOWN: case WM_RBUTTONDOWN: case WM_MBUTTONDOWN: case WM_KEYDOWN: case WM_SYSKEYDOWN:
+ case WM_MOUSEMOVE:
+  if(!g_preview&&!g_config_mode&&GetTickCount()-g_start_time>1200){POINT pt;GetCursorPos(&pt);if(pt.x!=g_start_cursor.x||pt.y!=g_start_cursor.y){DestroyWindow(hwnd);return 0;}}
+  break;
+ case WM_LBUTTONDOWN: case WM_RBUTTONDOWN: case WM_MBUTTONDOWN: case WM_KEYDOWN: case WM_SYSKEYDOWN:
   if(!g_preview&&!g_config_mode){DestroyWindow(hwnd);return 0;} break;
  case WM_DESTROY: KillTimer(hwnd,1);g_running=FALSE;PostQuitMessage(0);return 0;
  }
