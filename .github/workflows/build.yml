@@ -19,19 +19,22 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
 
-      - name: Package separate screensavers
+      - name: Package screensavers
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path package | Out-Null
           Copy-Item build/Release/CarsonScreenSaver.scr package/CarsonScreenSaver.scr
           Copy-Item build/Release/CarsonTuxScreenSaver.scr package/CarsonTuxScreenSaver.scr
+          Copy-Item build/Release/CarsonWindows7ScreenSaver.scr package/CarsonWindows7ScreenSaver.scr
           Copy-Item Install-CarsonScreenSavers.ps1 package/Install-CarsonScreenSavers.ps1
           Copy-Item Install-CarsonScreenSavers.cmd package/Install-CarsonScreenSavers.cmd
+          Copy-Item Install-CarsonScreenSavers-v2.ps1 package/Install-CarsonScreenSavers-v2.ps1
+          Copy-Item Install-CarsonScreenSavers-v2.cmd package/Install-CarsonScreenSavers-v2.cmd
 
       - name: Create ZIP with separate screensavers
         shell: pwsh
         run: |
-          Compress-Archive -Path package/CarsonScreenSaver.scr,package/CarsonTuxScreenSaver.scr -DestinationPath CarsonScreenSavers.zip -Force
+          Compress-Archive -Path package/* -DestinationPath CarsonScreenSavers.zip -Force
 
       - name: Upload screensavers
         uses: actions/upload-artifact@v4
