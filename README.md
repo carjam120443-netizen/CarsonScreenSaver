@@ -2,15 +2,28 @@
 
 A custom Windows screensaver project built in C.
 
-## Current starter
+## Screensavers
 
-The project currently contains a minimal screensaver that:
+The project provides two separate selectable screensavers:
 
-- Builds as a Windows GUI executable and .scr file.
-- Supports /s for screensaver mode.
-- Supports /c for configuration.
-- Supports /p <HWND> for Windows preview mode.
-- Is ready to grow into multiple screensavers and visual modes.
+- **CarsonScreenSaver.scr** — Windows 7 Aero-inspired bubbles and glass effect.
+- **CarsonTuxScreenSaver.scr** — animated Tux-themed penguin.
+
+Both are separate `.scr` programs. After installation, Windows can list them independently in Screen Saver Settings.
+
+## Install
+
+Download `CarsonScreenSavers.zip` from GitHub Actions and extract it.
+
+Run `Install-CarsonScreenSavers.cmd` as Administrator. It copies both `.scr` files into `%WINDIR%\\System32`, then opens the Windows Screen Saver Settings dialog.
+
+After installation, open:
+
+**Settings → Personalization → Lock screen → Screen saver**
+
+You should be able to select either Carson screensaver from the **Screen saver** dropdown.
+
+Windows uses the `SCRNSAVE.EXE` value under `HKCU\\Control Panel\\Desktop` for the selected screen saver.
 
 ## Build locally
 
@@ -21,12 +34,22 @@ cmake -S . -B build -A x64
 cmake --build build --config Release
 ```
 
-The generated screensaver is:
+Generated files:
 
-```
+```text
 build/Release/CarsonScreenSaver.scr
+build/Release/CarsonTuxScreenSaver.scr
 ```
 
-## Planned
+## GitHub Actions
 
-More screensaver modes, effects, configuration options, assets, and polished Windows integration can be added over time.
+The workflow builds both screensavers and packages them into `CarsonScreenSavers.zip`.
+
+The ZIP contains:
+
+```text
+CarsonScreenSaver.scr
+CarsonTuxScreenSaver.scr
+Install-CarsonScreenSavers.ps1
+Install-CarsonScreenSavers.cmd
+```

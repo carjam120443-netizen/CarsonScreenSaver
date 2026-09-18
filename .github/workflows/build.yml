@@ -25,6 +25,8 @@ jobs:
           New-Item -ItemType Directory -Force -Path package | Out-Null
           Copy-Item build/Release/CarsonScreenSaver.scr package/CarsonScreenSaver.scr
           Copy-Item build/Release/CarsonTuxScreenSaver.scr package/CarsonTuxScreenSaver.scr
+          Copy-Item Install-CarsonScreenSavers.ps1 package/Install-CarsonScreenSavers.ps1
+          Copy-Item Install-CarsonScreenSavers.cmd package/Install-CarsonScreenSavers.cmd
 
       - name: Create ZIP with separate screensavers
         shell: pwsh
