@@ -1,5 +1,3 @@
-#define UNICODE
-#define _UNICODE
 #include <windows.h>
 #include <math.h>
 
@@ -90,7 +88,7 @@ static void draw_scene(HDC dc, RECT *r) {
     HFONT logo_font = CreateFontW(-(s / 7), 0, 0, 0, FW_LIGHT, FALSE, FALSE, FALSE,
         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
         DEFAULT_PITCH, L"Segoe UI Light");
-    HFONT old = (HFONT)SelectObject(dc, logo_font);
+    HGDIOBJ old = SelectObject(dc, logo_font);
     RECT title = {0, cy + s/2 + 22, w, cy + s/2 + 85};
     DrawTextW(dc, L"Windows 7", -1, &title, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     SelectObject(dc, old);
